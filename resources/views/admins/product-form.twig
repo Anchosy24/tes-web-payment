@@ -1,0 +1,200 @@
+{% extends "layouts/dashboard.twig" %}
+
+{% block title %}{{ mode == 'create' ? 'Add New Product' : 'Edit Product' }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">
+            <i class="bi bi-{{ mode == 'create' ? 'plus-circle' : 'pencil' }} me-2"></i>
+            {{ mode == 'create' ? 'Add New Product' : 'Edit Product' }}
+        </h2>
+        <a href="{{ path_for('admin.products') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Back to Products
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body p-4">
+                    <form method="POST" action="{{ mode == 'create' ? path_for('admin.products.store') : path_for('admin.products.update', {id: product.id}) }}" id="productForm">
+                        
+                        <!-- Product Name -->
+                        <div class="mb-3">
+                            <label for="product_name" class="form-label">
+                                Product Name <span class="text-danger">*</span>
+                            </label>
+                            <input 
+                                type="text" 
+                                class="form-control form-control-lg" 
+                                id="product_name" 
+                                name="product_name" 
+                                value="{{ product.product_name ?? '' }}"
+                                placeholder="e.g. Laptop ASUS ROG"
+                                required
+                                autofocus
+                            >
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea 
+                                class="form-control" 
+                                id="description" 
+                                name="description" 
+                                rows="4"
+                                placeholder="Product description..."
+                            >{{ product.description ?? '' }}</textarea>
+                        </div>
+
+                        <!-- Price & Stock -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="price" class="form-label">
+                                        Price (Rp) <span class="text-danger">*</span>
+                                    </label>
+                                    <input 
+                                        type="number" 
+                                        class="form-control form-control-lg" 
+                                        id="price" 
+                                        name="price" 
+                                        value="{{ product.price ?? '' }}"
+                                        min="0"
+                                        step="1000"
+                                        placeholder="e.g. 15000000"
+                                        required
+                                    >
+                                    <small class="text-muted">Harga dalam Rupiah penuh (tanpa desimal)</small>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="stock" class="form-label">
+                                        Stock <span class="text-danger">*</span>
+                                    </label>
+                                    <input 
+                                        type="number" 
+                                        class="form-control form-control-lg" 
+                                        id="stock" 
+                                        name="stock" 
+                                        value="{{ product.stock ?? 0 }}"
+                                        min="0"
+                                        placeholder="e.g. 10"
+                                        required
+                                    >
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Image URL -->
+                        <div class="mb-4">
+                            <label for="image_url" class="form-label">Image URL</label>
+                            <input 
+                                type="url" 
+                                class="form-control" 
+                                id="image_url" 
+                                name="image_url" 
+                                value="{{ product.image_url ?? '' }}"
+                                placeholder="https://example.com/image.jpg"
+                            >
+                            <small class="text-muted">Gunakan URL gambar dari Unsplash atau placeholder</small>
+                            
+                            {% if product.image_url %}
+                            <div class="mt-2">
+                                <img src="{{ product.image_url }}" class="img-thumbnail" style="max-height: 150px;">
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Preview Price -->
+                        <div class="alert alert-info">
+                            <strong>Preview Harga:</strong>
+                            <span id="pricePreview">Rp 0</span>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-{{ mode == 'create' ? 'save' : 'check-circle' }} me-1"></i>
+                                {{ mode == 'create' ? 'Create Product' : 'Update Product' }}
+                            </button>
+                            <a href="{{ path_for('admin.products') }}" class="btn btn-secondary btn-lg">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Price Preview
+    function updatePricePreview() {
+        const price = $('#price').val() || 0;
+        const formatted = 'Rp ' + parseInt(price).toLocaleString('id-ID');
+        $('#pricePreview').text(formatted);
+    }
+    
+    $('#price').on('input', updatePricePreview);
+    updatePricePreview();
+    
+    // Form Validation
+    $('#productForm').on('submit', function(e) {
+        const productName = $('#product_name').val().trim();
+        const price = parseInt($('#price').val());
+        const stock = parseInt($('#stock').val());
+        
+        if (!productName) {
+            e.preventDefault();
+            Swal.fire({
+                icon: 'warning',
+                title: 'Nama Produk Wajib!',
+                text: 'Silakan isi nama produk.',
+                confirmButtonColor: '#0d6efd'
+            });
+            return false;
+        }
+        
+        if (price <= 0) {
+            e.preventDefault();
+            Swal.fire({
+                icon: 'warning',
+                title: 'Harga Tidak Valid!',
+                text: 'Harga harus lebih dari 0.',
+                confirmButtonColor: '#0d6efd'
+            });
+            return false;
+        }
+        
+        if (stock < 0) {
+            e.preventDefault();
+            Swal.fire({
+                icon: 'warning',
+                title: 'Stock Tidak Valid!',
+                text: 'Stock tidak boleh negatif.',
+                confirmButtonColor: '#0d6efd'
+            });
+            return false;
+        }
+        
+        // Show loading
+        Swal.fire({
+            title: '{{ mode == 'create' ? 'Creating' : 'Updating' }} Product...',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

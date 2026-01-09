@@ -1,6 +1,7 @@
 <?php
 
 use App\Controllers\AuthController;
+use App\Controllers\AdminController;
 use App\Middleware\AuthMiddleware;
 use App\Middleware\AdminMiddleware;
 use App\Middleware\UserMiddleware;
@@ -42,27 +43,45 @@ $app->get('/test-db', function ($req, $res) {
 | ADMIN ROUTES
 |--------------------------------------------------------------------------
 */
-$app->group('/admin', function () {
+$app->group('/admin', function () use ($app) {
 
     // Dashboard
-    $this->get('', function ($req, $res) {
-        return $this->view->render($res, 'admins/index.twig');
-    })->setName('admin.dashboard');
+    $app->get('', AdminController::class . ':index')
+        ->setName('admin.dashboard');
+
+    // Products
+    $app->get('/products', AdminController::class . ':products')
+        ->setName('admin.products');
+    
+    $app->get('/products/create', AdminController::class . ':createProductForm')
+        ->setName('admin.products.create');
+    
+    $app->post('/products', AdminController::class . ':storeProduct')
+        ->setName('admin.products.store');
+    
+    $app->get('/products/{id}/edit', AdminController::class . ':editProductForm')
+        ->setName('admin.products.edit');
+    
+    $app->post('/products/{id}', AdminController::class . ':updateProduct')
+        ->setName('admin.products.update');
+    
+    $app->post('/products/{id}/delete', AdminController::class . ':deleteProduct')
+        ->setName('admin.products.delete');
 
     // Orders
-    $this->get('/orders', function ($req, $res) {
-        return $this->view->render($res, 'admins/orders.twig');
-    })->setName('admin.orders');
+    $app->get('/orders', AdminController::class . ':orders')
+        ->setName('admin.orders');
+    
+    $app->get('/orders/{id}', AdminController::class . ':orderDetail')
+        ->setName('admin.order.detail');
 
     // Payment History
-    $this->get('/payment', function ($req, $res) {
-        return $this->view->render($res, 'admins/payment.twig');
-    })->setName('admin.payment');
+    $app->get('/payment', AdminController::class . ':payments')
+        ->setName('admin.payment');
 
     // Users Management
-    $this->get('/users', function ($req, $res) {
-        return $this->view->render($res, 'admins/users.twig');
-    })->setName('admin.users');
+    $app->get('/users', AdminController::class . ':users')
+        ->setName('admin.users');
 
 })->add(new AdminMiddleware());
 
@@ -71,20 +90,20 @@ $app->group('/admin', function () {
 | CUSTOMER / USER ROUTES
 |--------------------------------------------------------------------------
 */
-$app->group('/customer', function () {
+$app->group('/customer', function () use ($app) {
 
     // Home
-    $this->get('', function ($req, $res) {
+    $app->get('', function ($req, $res) {
         return $this->view->render($res, 'customers/index.twig');
     })->setName('customer.home');
 
     // Orders
-    $this->get('/orders', function ($req, $res) {
+    $app->get('/orders', function ($req, $res) {
         return $this->view->render($res, 'customers/myorders.twig');
     })->setName('customer.orders');
 
     // Payment
-    $this->get('/payment', function ($req, $res) {
+    $app->get('/payment', function ($req, $res) {
         return $this->view->render($res, 'customers/mypayment.twig');
     })->setName('customer.payment');
 
