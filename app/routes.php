@@ -2,6 +2,7 @@
 
 use App\Controllers\AuthController;
 use App\Controllers\AdminController;
+use App\Controllers\UserController;
 use App\Middleware\AuthMiddleware;
 use App\Middleware\AdminMiddleware;
 use App\Middleware\UserMiddleware;
@@ -27,6 +28,14 @@ $app->post('/register', AuthController::class . ':register')
 
 $app->get('/logout', AuthController::class . ':logout')
     ->setName('logout');
+
+/*
+|--------------------------------------------------------------------------
+| PAYMENT CALLBACK (PUBLIC - for Midtrans webhook)
+|--------------------------------------------------------------------------
+*/
+$app->post('/payment/callback', UserController::class . ':paymentCallback')
+    ->setName('payment.callback');
 
 /*
 |--------------------------------------------------------------------------
@@ -92,19 +101,46 @@ $app->group('/admin', function () use ($app) {
 */
 $app->group('/customer', function () use ($app) {
 
-    // Home
-    $app->get('', function ($req, $res) {
-        return $this->view->render($res, 'customers/index.twig');
-    })->setName('customer.home');
-
-    // Orders
-    $app->get('/orders', function ($req, $res) {
-        return $this->view->render($res, 'customers/myorders.twig');
-    })->setName('customer.orders');
-
+    // Home - Product List
+    $app->get('', UserController::class . ':index')
+        ->setName('customer.home');
+    
+    // Product Detail
+    $app->get('/product/{id}', UserController::class . ':productDetail')
+        ->setName('customer.product.detail');
+    
+    // Cart
+    $app->get('/cart', UserController::class . ':cart')
+        ->setName('customer.cart');
+    
+    $app->post('/cart/add', UserController::class . ':addToCart')
+        ->setName('customer.cart.add');
+    
+    $app->post('/cart/update', UserController::class . ':updateCart')
+        ->setName('customer.cart.update');
+    
+    $app->post('/cart/remove/{id}', UserController::class . ':removeFromCart')
+        ->setName('customer.cart.remove');
+    
+    // Checkout
+    $app->post('/checkout', UserController::class . ':checkout')
+        ->setName('customer.checkout');
+    
     // Payment
-    $app->get('/payment', function ($req, $res) {
-        return $this->view->render($res, 'customers/mypayment.twig');
-    })->setName('customer.payment');
+    $app->get('/payment/{id}', UserController::class . ':payment')
+        ->setName('customer.payment');
+    
+    $app->post('/payment/{id}/process', UserController::class . ':processPayment')
+        ->setName('customer.payment.process');
+    
+    $app->get('/payment/{id}/check', UserController::class . ':checkPaymentStatus')
+        ->setName('customer.payment.check');
+    
+    // My Orders
+    $app->get('/orders', UserController::class . ':myOrders')
+        ->setName('customer.orders');
+    
+    $app->get('/orders/{id}', UserController::class . ':orderDetail')
+        ->setName('customer.order.detail');
 
 })->add(new UserMiddleware());

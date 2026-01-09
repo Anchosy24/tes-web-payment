@@ -69,7 +69,7 @@
                                 </td>
                                 <td>
                                     <span class="badge bg-secondary">
-                                        {{ payment.payment_type|upper ?? 'N/A' }}
+                                        {{ payment.payment_type|default('N/A')|upper }}
                                     </span>
                                 </td>
                                 <td><strong>Rp {{ payment.gross_amount|number_format(0, ',', '.') }}</strong></td>

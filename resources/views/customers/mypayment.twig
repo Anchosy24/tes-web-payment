@@ -1,0 +1,328 @@
+{% extends "layouts/home.twig" %}
+
+{% block title %}Pembayaran{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h2 class="mb-1 fw-bold">
+                        <i class="bi bi-credit-card text-primary"></i> Pembayaran
+                    </h2>
+                    <p class="text-muted mb-0">Selesaikan pembayaran untuk order Anda</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Order Details -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fw-bold">Detail Pesanan</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <small class="text-muted">Order Number</small>
+                            <h6 class="fw-bold">{{ order.order_number }}</h6>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            <small class="text-muted">Status</small>
+                            <div>
+                                {% if order.status == 'success' %}
+                                    <span class="badge bg-success fs-6">Success</span>
+                                {% elseif order.status == 'pending' %}
+                                    <span class="badge bg-warning text-dark fs-6">Pending</span>
+                                {% else %}
+                                    <span class="badge bg-secondary fs-6">{{ order.status|capitalize }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h6 class="fw-bold mb-3">Item Pesanan</h6>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Produk</th>
+                                    <th>Harga</th>
+                                    <th>Qty</th>
+                                    <th>Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in order.items %}
+                                <tr>
+                                    <td>{{ item.product_name }}</td>
+                                    <td>Rp {{ item.price|number_format(0, ',', '.') }}</td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td><strong>Rp {{ item.subtotal|number_format(0, ',', '.') }}</strong></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="bg-light">
+                                <tr>
+                                    <th colspan="3" class="text-end">Total:</th>
+                                    <th class="text-success">
+                                        Rp {{ order.total_amount|number_format(0, ',', '.') }}
+                                    </th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Status -->
+            {% if payment %}
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fw-bold">Status Pembayaran</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <small class="text-muted d-block">Transaction ID</small>
+                            <code class="fs-6">{{ payment.transaction_id }}</code>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <small class="text-muted d-block">Payment Type</small>
+                            <strong>{{ payment.payment_type|upper }}</strong>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <small class="text-muted d-block">Amount</small>
+                            <h5 class="text-success mb-0">Rp {{ payment.gross_amount|number_format(0, ',', '.') }}</h5>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <small class="text-muted d-block">Status</small>
+                            {% if payment.status == 'settlement' or payment.status == 'capture' %}
+                                <span class="badge bg-success fs-6">{{ payment.status|capitalize }}</span>
+                            {% elseif payment.status == 'pending' %}
+                                <span class="badge bg-warning text-dark fs-6">Pending</span>
+                            {% else %}
+                                <span class="badge bg-danger fs-6">{{ payment.status|capitalize }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Payment Action -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm sticky-top" style="top: 20px;">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-4">Ringkasan Pembayaran</h5>
+                    
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Order Number</span>
+                            <strong>{{ order.order_number }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Total Item</span>
+                            <strong>{{ order.items|length }} produk</strong>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between mb-4">
+                        <h5 class="mb-0">Total Bayar</h5>
+                        <h4 class="mb-0 text-success fw-bold">
+                            Rp {{ order.total_amount|number_format(0, ',', '.') }}
+                        </h4>
+                    </div>
+                    
+                    {% if order.status == 'pending' %}
+                        {% if not payment or payment.status == 'pending' %}
+                        <div class="d-grid gap-2 mb-3">
+                            <button 
+                                id="pay-button" 
+                                class="btn btn-primary btn-lg"
+                                onclick="processPayment()"
+                            >
+                                <i class="bi bi-credit-card"></i> Bayar Sekarang
+                            </button>
+                        </div>
+                        {% endif %}
+                    {% endif %}
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{{ path_for('customer.orders') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-box-seam"></i> Lihat Pesanan
+                        </a>
+                    </div>
+                    
+                    <div class="mt-4 p-3 bg-light rounded">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bi bi-shield-check text-success me-2" style="font-size: 1.5rem;"></i>
+                            <strong>Pembayaran Aman</strong>
+                        </div>
+                        <small class="text-muted">
+                            Transaksi Anda diproses oleh Midtrans dengan enkripsi SSL
+                        </small>
+                    </div>
+                    
+                    {% if order.status == 'pending' %}
+                    <div class="alert alert-info mt-3 mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        <small>Selesaikan pembayaran dalam 24 jam</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Midtrans Snap -->
+<script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ 'Mid-client-YOUR_CLIENT_KEY' }}"></script>
+
+<script>
+function processPayment() {
+    const button = document.getElementById('pay-button');
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Memproses...';
+    
+    fetch('{{ path_for('customer.payment.process', {id: order.id}) }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.snap_token) {
+            // Open Midtrans Snap
+            snap.pay(data.snap_token, {
+                onSuccess: function(result) {
+                    console.log('Payment success:', result);
+                    
+                    // Show loading
+                    Swal.fire({
+                        title: 'Memverifikasi Pembayaran...',
+                        text: 'Mohon tunggu sebentar',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    
+                    // Check payment status after 2 seconds
+                    setTimeout(() => {
+                        checkPaymentStatus();
+                    }, 2000);
+                },
+                onPending: function(result) {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Pembayaran Pending',
+                        text: 'Silakan selesaikan pembayaran Anda',
+                        confirmButtonColor: '#0d6efd'
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                },
+                onError: function(result) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Pembayaran Gagal',
+                        text: 'Terjadi kesalahan saat memproses pembayaran',
+                        confirmButtonColor: '#dc3545'
+                    });
+                    button.disabled = false;
+                    button.innerHTML = '<i class="bi bi-credit-card"></i> Bayar Sekarang';
+                },
+                onClose: function() {
+                    button.disabled = false;
+                    button.innerHTML = '<i class="bi bi-credit-card"></i> Bayar Sekarang';
+                }
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal',
+                text: data.message || 'Gagal memproses pembayaran',
+                confirmButtonColor: '#dc3545'
+            });
+            button.disabled = false;
+            button.innerHTML = '<i class="bi bi-credit-card"></i> Bayar Sekarang';
+        }
+    })
+    .catch(error => {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Terjadi kesalahan: ' + error.message,
+            confirmButtonColor: '#dc3545'
+        });
+        button.disabled = false;
+        button.innerHTML = '<i class="bi bi-credit-card"></i> Bayar Sekarang';
+    });
+}
+
+function checkPaymentStatus() {
+    fetch('{{ path_for('customer.payment.check', {id: order.id}) }}', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (data.order_status === 'success') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Pembayaran Berhasil!',
+                    text: 'Terima kasih atas pembayaran Anda',
+                    confirmButtonColor: '#0d6efd'
+                }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Status: ' + data.order_status,
+                    text: 'Payment status: ' + data.payment_status,
+                    confirmButtonColor: '#0d6efd'
+                }).then(() => {
+                    window.location.reload();
+                });
+            }
+        } else {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Tidak Dapat Memverifikasi',
+                text: 'Silakan refresh halaman untuk melihat status terbaru',
+                confirmButtonColor: '#0d6efd'
+            }).then(() => {
+                window.location.reload();
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Check status error:', error);
+        Swal.fire({
+            icon: 'warning',
+            title: 'Verifikasi Gagal',
+            text: 'Silakan refresh halaman untuk melihat status pembayaran',
+            confirmButtonColor: '#0d6efd'
+        }).then(() => {
+            window.location.reload();
+        });
+    });
+}
+</script>
+{% endblock %}

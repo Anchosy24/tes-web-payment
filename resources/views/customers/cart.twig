@@ -1,0 +1,238 @@
+{% extends "layouts/home.twig" %}
+
+{% block title %}Keranjang Belanja{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="mb-1 fw-bold">
+                                <i class="bi bi-cart3 text-primary"></i> Keranjang Belanja
+                            </h2>
+                            <p class="text-muted mb-0">Review pesanan Anda sebelum checkout</p>
+                        </div>
+                        <a href="{{ path_for('customer.home') }}" class="btn btn-outline-primary">
+                            <i class="bi bi-arrow-left"></i> Lanjut Belanja
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if cart is empty %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-cart-x" style="font-size: 6rem; color: #ddd;"></i>
+                    <h3 class="mt-4 text-muted">Keranjang Anda Kosong</h3>
+                    <p class="text-muted mb-4">Tambahkan produk ke keranjang untuk melanjutkan</p>
+                    <a href="{{ path_for('customer.home') }}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-shop"></i> Mulai Belanja
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="row g-4">
+        <!-- Cart Items -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="px-4">Produk</th>
+                                    <th>Harga</th>
+                                    <th>Jumlah</th>
+                                    <th>Subtotal</th>
+                                    <th class="text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in cart %}
+                                <tr>
+                                    <td class="px-4">
+                                        <div class="d-flex align-items-center">
+                                            {% if item.image_url %}
+                                            <img src="{{ item.image_url }}" class="me-3 rounded" style="width: 60px; height: 60px; object-fit: cover;">
+                                            {% else %}
+                                            <div class="bg-light me-3 rounded d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                                <i class="bi bi-image text-muted"></i>
+                                            </div>
+                                            {% endif %}
+                                            <div>
+                                                <strong>{{ item.product_name }}</strong>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="align-middle">
+                                        Rp {{ item.price|number_format(0, ',', '.') }}
+                                    </td>
+                                    <td class="align-middle">
+                                        <form method="POST" action="{{ path_for('customer.cart.update') }}" class="d-inline">
+                                            <input type="hidden" name="product_id" value="{{ item.product_id }}">
+                                            <div class="input-group" style="width: 130px;">
+                                                <button class="btn btn-sm btn-outline-secondary" type="button" onclick="updateQty({{ item.product_id }}, -1)">
+                                                    <i class="bi bi-dash"></i>
+                                                </button>
+                                                <input 
+                                                    type="number" 
+                                                    class="form-control form-control-sm text-center" 
+                                                    name="quantity" 
+                                                    id="qty-{{ item.product_id }}"
+                                                    value="{{ item.quantity }}" 
+                                                    min="1"
+                                                    onchange="this.form.submit()"
+                                                >
+                                                <button class="btn btn-sm btn-outline-secondary" type="button" onclick="updateQty({{ item.product_id }}, 1)">
+                                                    <i class="bi bi-plus"></i>
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </td>
+                                    <td class="align-middle">
+                                        <strong class="text-success">
+                                            Rp {{ (item.price * item.quantity)|number_format(0, ',', '.') }}
+                                        </strong>
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        <button 
+                                            onclick="removeItem({{ item.product_id }}, '{{ item.product_name }}')" 
+                                            class="btn btn-sm btn-outline-danger"
+                                        >
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Summary -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm sticky-top" style="top: 20px;">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-4">Ringkasan Pesanan</h5>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Total Item</span>
+                            <strong>{{ cart|length }} produk</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Subtotal</span>
+                            <strong>Rp {{ total|number_format(0, ',', '.') }}</strong>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between mb-4">
+                        <h5 class="mb-0">Total</h5>
+                        <h4 class="mb-0 text-success fw-bold">
+                            Rp {{ total|number_format(0, ',', '.') }}
+                        </h4>
+                    </div>
+                    
+                    <form method="POST" action="{{ path_for('customer.checkout') }}" id="checkoutForm">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-credit-card"></i> Lanjut ke Pembayaran
+                            </button>
+                            <a href="{{ path_for('customer.home') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Lanjut Belanja
+                            </a>
+                        </div>
+                    </form>
+                    
+                    <div class="mt-4 p-3 bg-light rounded">
+                        <small class="text-muted">
+                            <i class="bi bi-shield-check text-success"></i>
+                            Pembayaran aman dengan Midtrans
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Hidden form for remove item -->
+<form id="removeForm" method="POST" style="display: none;">
+    <input type="hidden" name="_method" value="DELETE">
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updateQty(productId, change) {
+    const input = document.getElementById('qty-' + productId);
+    let value = parseInt(input.value);
+    value += change;
+    
+    if (value >= 1) {
+        input.value = value;
+        input.form.submit();
+    }
+}
+
+function removeItem(productId, productName) {
+    Swal.fire({
+        title: 'Hapus Item?',
+        html: `Apakah Anda yakin ingin menghapus <strong>${productName}</strong> dari keranjang?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const form = document.getElementById('removeForm');
+            form.action = '{{ path_for('customer.cart.remove', {id: '__ID__'}) }}'.replace('__ID__', productId);
+            form.submit();
+        }
+    });
+}
+
+document.getElementById('checkoutForm')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    Swal.fire({
+        title: 'Konfirmasi Checkout',
+        text: 'Lanjut ke proses pembayaran?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#0d6efd',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Ya, Lanjutkan',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({
+                title: 'Memproses...',
+                text: 'Membuat pesanan Anda',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            this.submit();
+        }
+    });
+});
+</script>
+{% endblock %}
